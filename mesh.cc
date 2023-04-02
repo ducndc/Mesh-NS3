@@ -86,7 +86,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("MeshExample");
+NS_LOG_COMPONENT_DEFINE("MeshMultiAccessPoint");
 
 // Declaring these variables outside of main() for use in trace sinks
 uint32_t g_udpTxCount = 0; //!< Rx packet counter.
@@ -304,8 +304,8 @@ MeshTest::InstallApplication()
     UdpEchoServerHelper echoServer(portNumber);
     uint16_t sinkNodeId = m_xSize * m_ySize - 1;
     ApplicationContainer serverApps = echoServer.Install(nodes.Get(sinkNodeId));
-    serverApps.Start(Seconds(1.0));
-    serverApps.Stop(Seconds(m_totalTime + 1));
+    serverApps.Start(Seconds(SERVER_APP_START));
+    serverApps.Stop(Seconds(m_totalTime + SERVER_APP_STOP_INTERVAL));
     UdpEchoClientHelper echoClient(interfaces.GetAddress(sinkNodeId), portNumber);
     echoClient.SetAttribute("MaxPackets",
                             UintegerValue((uint32_t)(m_totalTime * (1 / m_packetInterval))));
@@ -315,8 +315,8 @@ MeshTest::InstallApplication()
     Ptr<UdpEchoClient> app = clientApps.Get(0)->GetObject<UdpEchoClient>();
     app->TraceConnectWithoutContext("Tx", MakeCallback(&TxTrace));
     app->TraceConnectWithoutContext("Rx", MakeCallback(&RxTrace));
-    clientApps.Start(Seconds(1.0));
-    clientApps.Stop(Seconds(m_totalTime + 1.5));
+    clientApps.Start(Seconds(CLIENT_APP_START));
+    clientApps.Stop(Seconds(m_totalTime + CLIENT_APP_STOP_INTERVAL));
 }
 
 int
@@ -326,7 +326,7 @@ MeshTest::Run()
     InstallInternetStack();
     InstallApplication();
     Simulator::Schedule(Seconds(m_totalTime), &MeshTest::Report, this);
-    Simulator::Stop(Seconds(m_totalTime + 2));
+    Simulator::Stop(Seconds(m_totalTime + SIMULATOR_STOP_INTERVAL));
     Simulator::Run();
     Simulator::Destroy();
     std::cout << "UDP echo packets sent: " << g_udpTxCount << " received: " << g_udpRxCount
@@ -358,6 +358,7 @@ MeshTest::Report()
 int
 main(int argc, char* argv[])
 {
+    LogComponentEnable("MeshMultiAccessPoint", LOG_LEVEL_INFO);
     MeshTest t;
     t.Configure(argc, argv);
     return t.Run();
